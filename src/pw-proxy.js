@@ -11,7 +11,10 @@ class PwServiceProxy
      * @param {Object} options
      */
     constructor(options) {
-        this._options = options || {};
+        this._options = Object.assign({}, {
+            bufferSize: 10485760,
+            bufferFreeSpaceGc: 1048576
+        }, options || {});
         this._clientHandlers = [];
         this._serverHandlers = [];
     }
@@ -49,13 +52,14 @@ class PwServiceProxy
      */
     _createReadPacketStream() {
         let buffer = new PwBuffer({
-            maxBufferLength: 1024**2 * 10
+            maxBufferLength: this._options.bufferSize
         });
         let packet;
         let oldPointer;
+        let _this = this;
 
         return through2.obj(function (chunk, enc, done) {
-            if (buffer.getFreeSpace() < 1024**2) {
+            if (buffer.getFreeSpace() < _this._options.bufferFreeSpaceGc) {
                 buffer.gc();
             }
 
@@ -134,7 +138,6 @@ class PwServiceProxy
         }).listen(options.listen, function () {
             console.info('---------------------------------------------------------------------------');
             console.info('[' + new Date().toLocaleString() + '] => Proxy start');
-            console.info(JSON.stringify(options, null, 2));
         }).on('error', function (err) {
             console.info('---------------------------------------------------------------------------');
             console.error('[' + new Date().toLocaleString() + '] => Proxy error');
