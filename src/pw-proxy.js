@@ -18,11 +18,11 @@ class PwServiceProxy
 
     /**
      * @param {Array} handlers
-     * @param {Stream} responseStream
+     * @param {Stream} socket
      * @return {Stream}
      * @private
      */
-    _createHandlersStream(handlers, responseStream) {
+    _createHandlersStream(handlers, socket) {
         return through2.obj(function (packet, enc, streamDone) {
             let _thisStream = this;
 
@@ -34,16 +34,7 @@ class PwServiceProxy
                     return next();
                 }
 
-                handler.handler(packet, function (resData) {
-                    if (resData instanceof PwBuffer) {
-                        responseStream.write(resData.buffer);
-                    } else if (resData instanceof Buffer) {
-                        responseStream.write(resData);
-                    } else if (resData instanceof Object) {
-                        resData.payload.writeCUInt(resData.payload.length, true).writeCUInt(resData.opcode, true);
-                        responseStream.write(resData.payload.buffer);
-                    }
-                }, next);
+                handler.handler(packet, socket, next);
             }, function (err) {
                 packet.payload.writeCUInt(packet.payload.length, true).writeCUInt(packet.opcode, true);
                 _thisStream.push(packet.payload.buffer);
@@ -53,7 +44,7 @@ class PwServiceProxy
     }
 
     /**
-     * @return {*}
+     * @return {Stream}
      * @private
      */
     _createReadPacketStream() {

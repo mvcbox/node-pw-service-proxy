@@ -19,10 +19,10 @@ module.exports = {
 
             /**
              * @param {Object} packet
-             * @param {Function} res
+             * @param {Socket} socket
              * @param {Function} next
              */
-            handler: function (packet, res, next) {
+            handler: function (packet, socket, next) {
                 console.info(options.title);
                 console.info({
                     opcode: packet.opcode,
