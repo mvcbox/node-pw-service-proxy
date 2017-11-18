@@ -17,8 +17,8 @@
   },
   "homepage": "https://github.com/mvcbox/node-pw-service-proxy#readme",
   "dependencies": {
+    "async": "^2.6.0",
     "pw-buffer": "^0.1.0",
-    "through2": "^2.0.3",
-    "uuid": "^3.1.0"
+    "through2": "^2.0.3"
   }
 }

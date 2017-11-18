@@ -2,8 +2,8 @@
 
 const PwBuffer = require('pw-buffer');
 const net = require('net');
-const uuidv4 = require('uuid/v4');
 const through2 = require('through2');
+const async = require('async');
 
 class PwServiceProxy
 {
@@ -12,44 +12,43 @@ class PwServiceProxy
      */
     constructor(options) {
         this._options = options || {};
-        this._handlers = [];
+        this._clientHandlers = [];
+        this._serverHandlers = [];
     }
 
     /**
-     * @return {*}
+     * @param {Array} handlers
+     * @param {Stream} responseStream
+     * @return {Stream}
      * @private
      */
-    _createClientToServerStream() {
-        return through2.obj(function (packet, enc, done) {
-            console.log('========================================== C => S ==========================================');
-            console.log({
-                opcode: packet.opcode,
-                length: packet.length,
-                payload: packet.payload.buffer
-            });
-            console.log('============================================================================================');
-            packet.payload.writeCUInt(packet.payload.length, true).writeCUInt(packet.opcode, true);
-            this.push(packet.payload.buffer);
-            done();
-        });
-    }
+    _createHandlersStream(handlers, responseStream) {
+        return through2.obj(function (packet, enc, streamDone) {
+            let _thisStream = this;
 
-    /**
-     * @return {*}
-     * @private
-     */
-    _createServerToClientStream() {
-        return through2.obj(function (packet, enc, done) {
-            console.log('========================================== S => C ==========================================');
-            console.log({
-                opcode: packet.opcode,
-                length: packet.length,
-                payload: packet.payload.buffer
+            async.each(handlers, function (handler, next) {
+                if (
+                    handler.only && handler.only.indexOf(packet.opcode) === -1 ||
+                    handler.except && handler.except.indexOf(packet.opcode) !== -1
+                ) {
+                    return next();
+                }
+
+                handler.handler(packet, function (resData) {
+                    if (resData instanceof PwBuffer) {
+                        responseStream.write(resData.buffer);
+                    } else if (resData instanceof Buffer) {
+                        responseStream.write(resData);
+                    } else if (resData instanceof Object) {
+                        resData.payload.writeCUInt(resData.payload.length, true).writeCUInt(resData.opcode, true);
+                        responseStream.write(resData.payload.buffer);
+                    }
+                }, next);
+            }, function (err) {
+                packet.payload.writeCUInt(packet.payload.length, true).writeCUInt(packet.opcode, true);
+                _thisStream.push(packet.payload.buffer);
+                streamDone();
             });
-            console.log('============================================================================================');
-            packet.payload.writeCUInt(packet.payload.length, true).writeCUInt(packet.opcode, true);
-            this.push(packet.payload.buffer);
-            done();
         });
     }
 
@@ -113,15 +112,16 @@ class PwServiceProxy
         let _this = this;
 
         net.createServer(function (clientSocket) {
+            let remoteAddr = clientSocket.remoteAddress + ':' + clientSocket.remotePort;
             let alreadyClosed = false;
             let serverSocket = net.createConnection(options.connect);
 
             clientSocket
                 .pipe(_this._createReadPacketStream())
-                .pipe(_this._createClientToServerStream())
+                .pipe(_this._createHandlersStream(_this._clientHandlers, clientSocket))
                 .pipe(serverSocket)
                 .pipe(_this._createReadPacketStream())
-                .pipe(_this._createServerToClientStream())
+                .pipe(_this._createHandlersStream(_this._serverHandlers, serverSocket))
                 .pipe(clientSocket);
 
             function closeConnection() {
@@ -132,15 +132,21 @@ class PwServiceProxy
                 alreadyClosed = true;
                 clientSocket.destroy().unref();
                 serverSocket.destroy().unref();
+                console.info('---------------------------------------------------------------------------');
+                console.info('[' + new Date().toLocaleString() + '] => Client disconnected [' + remoteAddr + ']');
             }
 
             serverSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(true);
             clientSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(true);
+            console.info('---------------------------------------------------------------------------');
+            console.info('[' + new Date().toLocaleString() + '] => Client connected [' + remoteAddr + ']');
         }).listen(options.listen, function () {
-            console.info('--------------------------- Proxy start -------------------------');
+            console.info('---------------------------------------------------------------------------');
+            console.info('[' + new Date().toLocaleString() + '] => Proxy start');
             console.info(JSON.stringify(options, null, 2));
         }).on('error', function (err) {
-            console.error('--------------------------- Proxy error -------------------------');
+            console.info('---------------------------------------------------------------------------');
+            console.error('[' + new Date().toLocaleString() + '] => Proxy error');
             console.error(JSON.stringify(options, null, 2));
             console.error(err.stack);
         });
@@ -149,14 +155,21 @@ class PwServiceProxy
     }
 
     /**
-     * @param {string} name
-     * @param {Function} handler
+     * @param {Array} handlers
+     * @return {PwServiceProxy}
      */
-    addClientHandler(name, handler) {
-        this.handlers.push({
-            name,
-            handler
-        });
+    setClientHandlers(handlers) {
+        this._clientHandlers = handlers;
+        return this;
+    }
+
+    /**
+     * @param {Array} handlers
+     * @return {PwServiceProxy}
+     */
+    setServerHandlers(handlers) {
+        this._serverHandlers = handlers;
+        return this;
     }
 }
 
