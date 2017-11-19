@@ -21,11 +21,12 @@ class PwServiceProxy
 
     /**
      * @param {Array} handlers
-     * @param {Stream} socket
+     * @param {Stream} input
+     * @param {Stream} output
      * @return {Stream}
      * @private
      */
-    _createHandlersStream(handlers, socket) {
+    _createHandlersStream(handlers, input, output) {
         return through2.obj(function (packet, enc, streamDone) {
             let _thisStream = this;
 
@@ -37,7 +38,7 @@ class PwServiceProxy
                     return next();
                 }
 
-                handler.handler(packet, socket, next);
+                handler.handler(packet, input, output, next);
             }, function (err) {
                 packet.payload.writeCUInt(packet.payload.length, true).writeCUInt(packet.opcode, true);
                 _thisStream.push(packet.payload.buffer);
@@ -113,10 +114,10 @@ class PwServiceProxy
 
             clientSocket
                 .pipe(_this._createReadPacketStream())
-                .pipe(_this._createHandlersStream(_this._clientHandlers, clientSocket))
+                .pipe(_this._createHandlersStream(_this._clientHandlers, clientSocket, serverSocket))
                 .pipe(serverSocket)
                 .pipe(_this._createReadPacketStream())
-                .pipe(_this._createHandlersStream(_this._serverHandlers, serverSocket))
+                .pipe(_this._createHandlersStream(_this._serverHandlers, serverSocket, clientSocket))
                 .pipe(clientSocket);
 
             function closeConnection() {
