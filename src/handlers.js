@@ -23,11 +23,11 @@ module.exports = {
              * @param {Function} next
              */
             handler: function (packet, socket, next) {
-                console.info(options.title);
+                console.info("\n[" + new Date().toLocaleString() + ']: ' + options.title);
                 console.info({
-                    opcode: packet.opcode,
+                    opcode: packet.opcode + ' [0x' + packet.opcode.toString(16).toUpperCase() + ']',
                     length: packet.length,
-                    payload: packet.payload.buffer
+                    payload: packet.payload.buffer.toString('hex')
                 });
                 next();
             }

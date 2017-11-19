@@ -128,19 +128,19 @@ class PwServiceProxy
                 clientSocket.destroy().unref();
                 serverSocket.destroy().unref();
                 console.info('---------------------------------------------------------------------------');
-                console.info('[' + new Date().toLocaleString() + '] => Client disconnected [' + remoteAddr + ']');
+                console.info('[' + new Date().toLocaleString() + ']: Client disconnected [' + remoteAddr + ']');
             }
 
             serverSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(true);
             clientSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(true);
             console.info('---------------------------------------------------------------------------');
-            console.info('[' + new Date().toLocaleString() + '] => Client connected [' + remoteAddr + ']');
+            console.info('[' + new Date().toLocaleString() + ']: Client connected [' + remoteAddr + ']');
         }).listen(options.listen, function () {
             console.info('---------------------------------------------------------------------------');
-            console.info('[' + new Date().toLocaleString() + '] => Proxy start');
+            console.info('[' + new Date().toLocaleString() + ']: Proxy start');
         }).on('error', function (err) {
             console.info('---------------------------------------------------------------------------');
-            console.error('[' + new Date().toLocaleString() + '] => Proxy error');
+            console.error('[' + new Date().toLocaleString() + ']: Proxy error');
             console.error(JSON.stringify(options, null, 2));
             console.error(err.stack);
         });
