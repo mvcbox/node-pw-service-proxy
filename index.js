@@ -1,9 +1,9 @@
 'use strict';
 
-const PwBuffer = require('pw-buffer');
 const net = require('net');
-const through2 = require('through2');
 const async = require('async');
+const transformStream = require('./transform-stream-factory');
+const packetParserStream = require('./packet-parser-stream');
 
 class PwServiceProxy
 {
@@ -27,7 +27,7 @@ class PwServiceProxy
      * @private
      */
     _createHandlersStream(handlers, input, output) {
-        return through2.obj(function (packet, enc, streamDone) {
+        return transformStream(function (packet, enc, streamDone) {
             let _thisStream = this;
 
             async.each(handlers, function (handler, next) {
@@ -48,59 +48,6 @@ class PwServiceProxy
     }
 
     /**
-     * @return {Stream}
-     * @private
-     */
-    _createReadPacketStream() {
-        let buffer = new PwBuffer({
-            maxBufferLength: this._options.bufferSize
-        });
-        let packet;
-        let oldPointer;
-        let _this = this;
-
-        return through2.obj(function (chunk, enc, done) {
-            if (buffer.getFreeSpace() < _this._options.bufferFreeSpaceGc) {
-                buffer.gc();
-            }
-
-            buffer._writeNativeBuffer(chunk, false);
-
-            while (true) {
-                packet = {};
-                oldPointer = buffer.pointer;
-
-                if (!buffer.isReadableCUInt()) {
-                    buffer.pointer = oldPointer;
-                    break;
-                }
-
-                packet.opcode = buffer.readCUInt();
-
-                if (!buffer.isReadableCUInt()) {
-                    buffer.pointer = oldPointer;
-                    break;
-                }
-
-                packet.length = buffer.readCUInt();
-
-                if (!buffer.isReadable(packet.length)) {
-                    buffer.pointer = oldPointer;
-                    break;
-                }
-
-                packet.payload = buffer.readBuffer(packet.length, false, {
-                    maxBufferLength: packet.length + 10
-                });
-
-                this.push(packet);
-            }
-
-            done();
-        });
-    }
-
-    /**
      * @param {Object} options
      * @return {PwServiceProxy}
      */
@@ -113,10 +60,10 @@ class PwServiceProxy
             let serverSocket = net.createConnection(options.connect);
 
             clientSocket
-                .pipe(_this._createReadPacketStream())
+                .pipe(packetParserStream(_this._options))
                 .pipe(_this._createHandlersStream(_this._clientHandlers, clientSocket, serverSocket))
                 .pipe(serverSocket)
-                .pipe(_this._createReadPacketStream())
+                .pipe(packetParserStream(_this._options))
                 .pipe(_this._createHandlersStream(_this._serverHandlers, serverSocket, clientSocket))
                 .pipe(clientSocket);
 
