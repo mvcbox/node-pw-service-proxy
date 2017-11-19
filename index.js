@@ -3,7 +3,7 @@
 const net = require('net');
 const async = require('async');
 const transformStream = require('./transform-stream-factory');
-const packetParserStream = require('./packet-parser-stream');
+const packetParserStream = require('./packet-parser-stream-factory');
 
 class PwServiceProxy
 {
