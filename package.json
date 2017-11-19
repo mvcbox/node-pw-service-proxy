@@ -1,6 +1,6 @@
 {
   "name": "pw-service-proxy",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "TCP proxy for game services",
   "main": "index.js",
   "scripts": {
