@@ -25,11 +25,9 @@ module.exports = {
              */
             handler: function (packet, input, output, next) {
                 console.info("\n[" + new Date().toLocaleString() + ']: ' + options.title);
-                console.info({
-                    opcode: packet.opcode + ' [0x' + packet.opcode.toString(16).toUpperCase() + ']',
-                    length: packet.length,
-                    payload: packet.payload.buffer.toString('hex')
-                });
+                console.info('Opcode: ', packet.opcode + ' [0x' + packet.opcode.toString(16).toUpperCase() + ']');
+                console.info('Length: ', packet.length);
+                console.info('Payload: ', packet.payload.buffer.toString('hex'));
                 next();
             }
         };
