@@ -30,7 +30,7 @@ class PwServiceProxy
         return transformStream(function (packet, enc, streamDone) {
             let _thisStream = this;
 
-            async.each(handlers, function (handler, next) {
+            async.eachSeries(handlers, function (handler, next) {
                 if (
                     handler.only && handler.only.indexOf(packet.opcode) === -1 ||
                     handler.except && handler.except.indexOf(packet.opcode) !== -1
@@ -40,8 +40,11 @@ class PwServiceProxy
 
                 handler.handler(packet, input, output, next);
             }, function (err) {
-                packet.payload.writeCUInt(packet.payload.length, true).writeCUInt(packet.opcode, true);
-                _thisStream.push(packet.payload.buffer);
+                if (!err) {
+                    packet.payload.writeCUInt(packet.payload.length, true).writeCUInt(packet.opcode, true);
+                    _thisStream.push(packet.payload.buffer);
+                }
+
                 streamDone();
             });
         });
