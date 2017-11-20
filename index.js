@@ -13,7 +13,8 @@ class PwServiceProxy
     constructor(options) {
         this._options = Object.assign({}, {
             bufferSize: 10485760,
-            bufferFreeSpaceGc: 1048576
+            bufferFreeSpaceGc: 1048576,
+            noDelay: true
         }, options || {});
         this._clientHandlers = [];
         this._serverHandlers = [];
@@ -60,15 +61,15 @@ class PwServiceProxy
         net.createServer(function (clientSocket) {
             let remoteAddr = clientSocket.remoteAddress + ':' + clientSocket.remotePort;
             let alreadyClosed = false;
-            let serverSocket = net.createConnection(options.connect);
-
-            clientSocket
-                .pipe(packetParserStream(_this._options))
-                .pipe(_this._createHandlersStream(_this._clientHandlers, clientSocket, serverSocket))
-                .pipe(serverSocket)
-                .pipe(packetParserStream(_this._options))
-                .pipe(_this._createHandlersStream(_this._serverHandlers, serverSocket, clientSocket))
-                .pipe(clientSocket);
+            let serverSocket = net.createConnection(options.connect, function () {
+                clientSocket
+                    .pipe(packetParserStream(_this._options))
+                    .pipe(_this._createHandlersStream(_this._clientHandlers, clientSocket, serverSocket))
+                    .pipe(serverSocket)
+                    .pipe(packetParserStream(_this._options))
+                    .pipe(_this._createHandlersStream(_this._serverHandlers, serverSocket, clientSocket))
+                    .pipe(clientSocket);
+            });
 
             function closeConnection() {
                 if (alreadyClosed) {
@@ -82,8 +83,8 @@ class PwServiceProxy
                 console.info('[' + new Date().toLocaleString() + ']: Client disconnected [' + remoteAddr + ']');
             }
 
-            serverSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(true);
-            clientSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(true);
+            serverSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(_this._options.noDelay);
+            clientSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(_this._options.noDelay);
             console.info('---------------------------------------------------------------------------');
             console.info('[' + new Date().toLocaleString() + ']: Client connected [' + remoteAddr + ']');
         }).listen(options.listen, function () {
