@@ -14,10 +14,21 @@ class PwServiceProxy
         this._options = Object.assign({}, {
             bufferSize: 10485760,
             bufferFreeSpaceGc: 1048576,
-            noDelay: true
+            noDelay: true,
+            consoleLog: true
         }, options || {});
         this._clientHandlers = [];
         this._serverHandlers = [];
+    }
+
+    /**
+     * @return {PwServiceProxy}
+     */
+    consoleLog() {
+        if (this._options.consoleLog) {
+            console.log.apply(console, arguments);
+        }
+        return this;
     }
 
     /**
@@ -79,22 +90,23 @@ class PwServiceProxy
                 alreadyClosed = true;
                 clientSocket.destroy().unref();
                 serverSocket.destroy().unref();
-                console.info('---------------------------------------------------------------------------');
-                console.info('[' + new Date().toLocaleString() + ']: Client disconnected [' + remoteAddr + ']');
+                _this.consoleLog('---------------------------------------------------------------------------');
+                _this.consoleLog('[' + new Date().toLocaleString() + ']: Client disconnected [' + remoteAddr + ']');
             }
 
             serverSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(_this._options.noDelay);
             clientSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(_this._options.noDelay);
-            console.info('---------------------------------------------------------------------------');
-            console.info('[' + new Date().toLocaleString() + ']: Client connected [' + remoteAddr + ']');
+            _this.consoleLog('---------------------------------------------------------------------------');
+            _this.consoleLog('[' + new Date().toLocaleString() + ']: Client connected [' + remoteAddr + ']');
         }).listen(options.listen, function () {
-            console.info('---------------------------------------------------------------------------');
-            console.info('[' + new Date().toLocaleString() + ']: Proxy start');
+            _this.consoleLog('---------------------------------------------------------------------------');
+            _this.consoleLog('[' + new Date().toLocaleString() + ']: Proxy start');
         }).on('error', function (err) {
-            console.info('---------------------------------------------------------------------------');
+            console.log('---------------------------------------------------------------------------');
             console.error('[' + new Date().toLocaleString() + ']: Proxy error');
             console.error(JSON.stringify(options, null, 2));
             console.error(err.stack);
+            console.log('---------------------------------------------------------------------------');
         });
 
         return this;
