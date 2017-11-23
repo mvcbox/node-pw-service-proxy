@@ -88,8 +88,8 @@ class PwServiceProxy
                 }
 
                 alreadyClosed = true;
-                clientSocket.destroy().unref();
-                serverSocket.destroy().unref();
+                clientSocket.end().unref();
+                serverSocket.end().unref();
                 _this.consoleLog('---------------------------------------------------------------------------');
                 _this.consoleLog('[' + new Date().toLocaleString() + ']: Client disconnected [' + remoteAddr + ']');
             }
