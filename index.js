@@ -22,13 +22,30 @@ class PwServiceProxy
     }
 
     /**
-     * @return {PwServiceProxy}
+     *
      */
     consoleLog() {
         if (this._options.consoleLog) {
             console.log.apply(console, arguments);
         }
-        return this;
+    }
+
+    /**
+     * @param {Array} handlers
+     * @return {Array}
+     */
+    prepareHandlersList(handlers) {
+        let result = [];
+
+        for (let i = 0; i < handlers.length; ++i) {
+            if (Array.isArray(handlers[i])) {
+                result = result.concat(this.prepareHandlersList(handlers[i]));
+            } else {
+                result.push(handlers[i]);
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -102,11 +119,11 @@ class PwServiceProxy
             _this.consoleLog('---------------------------------------------------------------------------');
             _this.consoleLog('[' + new Date().toLocaleString() + ']: Proxy start');
         }).on('error', function (err) {
-            console.log('---------------------------------------------------------------------------');
+            console.error('---------------------------------------------------------------------------');
             console.error('[' + new Date().toLocaleString() + ']: Proxy error');
             console.error(JSON.stringify(options, null, 2));
             console.error(err.stack);
-            console.log('---------------------------------------------------------------------------');
+            console.error('---------------------------------------------------------------------------');
         });
 
         return this;
@@ -117,7 +134,7 @@ class PwServiceProxy
      * @return {PwServiceProxy}
      */
     setClientHandlers(handlers) {
-        this._clientHandlers = handlers;
+        this._clientHandlers = this.prepareHandlersList(handlers);
         return this;
     }
 
@@ -126,7 +143,7 @@ class PwServiceProxy
      * @return {PwServiceProxy}
      */
     setServerHandlers(handlers) {
-        this._serverHandlers = handlers;
+        this._serverHandlers = this.prepareHandlersList(handlers);
         return this;
     }
 }
