@@ -15,7 +15,7 @@ class PwServiceProxy
             bufferSize: 10485760,
             bufferFreeSpaceGc: 1048576,
             noDelay: true,
-            consoleLog: true
+            consoleLog: false
         }, options || {});
         this._clientHandlers = [];
         this._serverHandlers = [];
