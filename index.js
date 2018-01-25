@@ -2,8 +2,8 @@
 
 const net = require('net');
 const async = require('async');
-const transformStream = require('./transform-stream-factory');
-const packetParserStream = require('./packet-parser-stream-factory');
+const transformStreamFactory = require('./transform-stream-factory');
+const packetParserStreamFactory = require('./packet-parser-stream-factory');
 
 class PwServiceProxy
 {
@@ -22,7 +22,7 @@ class PwServiceProxy
     }
 
     /**
-     *
+     * @private
      */
     _consoleLog() {
         if (this._options.consoleLog) {
@@ -33,6 +33,7 @@ class PwServiceProxy
     /**
      * @param {Array} handlers
      * @return {Array}
+     * @private
      */
     _prepareHandlersList(handlers) {
         let result = [];
@@ -56,7 +57,7 @@ class PwServiceProxy
      * @private
      */
     _createHandlersStream(handlers, input, output) {
-        return transformStream(function (packet, enc, streamDone) {
+        return transformStreamFactory(function (packet, enc, streamDone) {
             let _thisStream = this;
 
             async.eachSeries(handlers, function (handler, next) {
@@ -91,10 +92,10 @@ class PwServiceProxy
             let alreadyClosed = false;
             let serverSocket = net.createConnection(options.connect, function () {
                 clientSocket
-                    .pipe(packetParserStream(_this._options))
+                    .pipe(packetParserStreamFactory(_this._options))
                     .pipe(_this._createHandlersStream(_this._clientHandlers, clientSocket, serverSocket))
                     .pipe(serverSocket)
-                    .pipe(packetParserStream(_this._options))
+                    .pipe(packetParserStreamFactory(_this._options))
                     .pipe(_this._createHandlersStream(_this._serverHandlers, serverSocket, clientSocket))
                     .pipe(clientSocket);
             });
