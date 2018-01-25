@@ -24,7 +24,7 @@ class PwServiceProxy
     /**
      *
      */
-    consoleLog() {
+    _consoleLog() {
         if (this._options.consoleLog) {
             console.log.apply(console, arguments);
         }
@@ -34,12 +34,12 @@ class PwServiceProxy
      * @param {Array} handlers
      * @return {Array}
      */
-    prepareHandlersList(handlers) {
+    _prepareHandlersList(handlers) {
         let result = [];
 
         for (let i = 0; i < handlers.length; ++i) {
             if (Array.isArray(handlers[i])) {
-                result = result.concat(this.prepareHandlersList(handlers[i]));
+                result = result.concat(this._prepareHandlersList(handlers[i]));
             } else {
                 result.push(handlers[i]);
             }
@@ -100,24 +100,22 @@ class PwServiceProxy
             });
 
             function closeConnection() {
-                if (alreadyClosed) {
-                    return;
+                if (!alreadyClosed) {
+                    alreadyClosed = true;
+                    clientSocket.end().unref();
+                    serverSocket.end().unref();
+                    _this._consoleLog('---------------------------------------------------------------------------');
+                    _this._consoleLog('[' + new Date().toLocaleString() + ']: Client disconnected [' + remoteAddr + ']');
                 }
-
-                alreadyClosed = true;
-                clientSocket.end().unref();
-                serverSocket.end().unref();
-                _this.consoleLog('---------------------------------------------------------------------------');
-                _this.consoleLog('[' + new Date().toLocaleString() + ']: Client disconnected [' + remoteAddr + ']');
             }
 
             serverSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(_this._options.noDelay);
             clientSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(_this._options.noDelay);
-            _this.consoleLog('---------------------------------------------------------------------------');
-            _this.consoleLog('[' + new Date().toLocaleString() + ']: Client connected [' + remoteAddr + ']');
+            _this._consoleLog('---------------------------------------------------------------------------');
+            _this._consoleLog('[' + new Date().toLocaleString() + ']: Client connected [' + remoteAddr + ']');
         }).listen(options.listen, function () {
-            _this.consoleLog('---------------------------------------------------------------------------');
-            _this.consoleLog('[' + new Date().toLocaleString() + ']: Proxy start');
+            _this._consoleLog('---------------------------------------------------------------------------');
+            _this._consoleLog('[' + new Date().toLocaleString() + ']: Proxy start');
         }).on('error', function (err) {
             console.error('---------------------------------------------------------------------------');
             console.error('[' + new Date().toLocaleString() + ']: Proxy error');
@@ -134,7 +132,7 @@ class PwServiceProxy
      * @return {PwServiceProxy}
      */
     setClientHandlers(handlers) {
-        this._clientHandlers = this.prepareHandlersList(handlers);
+        this._clientHandlers = this._prepareHandlersList(handlers);
         return this;
     }
 
@@ -143,7 +141,7 @@ class PwServiceProxy
      * @return {PwServiceProxy}
      */
     setServerHandlers(handlers) {
-        this._serverHandlers = this.prepareHandlersList(handlers);
+        this._serverHandlers = this._prepareHandlersList(handlers);
         return this;
     }
 }
