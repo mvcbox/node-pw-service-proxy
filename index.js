@@ -88,6 +88,14 @@ class PwServiceProxy
         let _this = this;
 
         net.createServer(function (clientSocket) {
+            if (
+                Array.isArray(options.allowedIp) && options.allowedIp.length && options.allowedIp.indexOf(clientSocket.remoteAddress) === -1 ||
+                typeof options.allowedIp === 'string' && options.allowedIp && options.allowedIp !== clientSocket.remoteAddress ||
+                typeof options.allowedIp === 'function' && !options.allowedIp(clientSocket)
+            ) {
+                return clientSocket.end().unref();
+            }
+
             let remoteAddr = clientSocket.remoteAddress + ':' + clientSocket.remotePort;
             let alreadyClosed = false;
             let serverSocket = net.createConnection(options.connect, function () {
