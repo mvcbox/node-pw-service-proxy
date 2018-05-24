@@ -5,8 +5,15 @@ const async = require('async');
 const transformStreamFactory = require('./transform-stream-factory');
 const packetParserStreamFactory = require('./packet-parser-stream-factory');
 
-class PwServiceProxy
-{
+/**
+ * @property {Object} _options
+ * @property {Object} [_handlers]
+ * @property {Object} [_handlers.client]
+ * @property {Array} [_handlers.client._list]
+ * @property {Object} [_handlers.server]
+ * @property {Array} [_handlers.server._list]
+ */
+class PwServiceProxy {
     /**
      * @param {Object} options
      */
@@ -17,8 +24,15 @@ class PwServiceProxy
             noDelay: true,
             consoleLog: false
         }, options || {});
-        this._clientHandlers = [];
-        this._serverHandlers = [];
+
+        this._handlers = {
+            client: {
+                _list: []
+            },
+            server: {
+                _list: []
+            }
+        };
     }
 
     /**
@@ -32,7 +46,7 @@ class PwServiceProxy
 
     /**
      * @param {Array} handlers
-     * @return {Array}
+     * @returns {Array}
      * @private
      */
     _prepareHandlersList(handlers) {
@@ -50,17 +64,17 @@ class PwServiceProxy
     }
 
     /**
-     * @param {Array} handlers
+     * @param {Object} handlers
      * @param {Stream} input
      * @param {Stream} output
-     * @return {Stream}
+     * @returns {Stream}
      * @private
      */
     _createHandlersStream(handlers, input, output) {
         return transformStreamFactory(function (packet, enc, streamDone) {
             let _thisStream = this;
 
-            async.eachSeries(handlers, function (handler, next) {
+            async.eachSeries(handlers._list, function (handler, next) {
                 if (
                     handler.only && handler.only.indexOf(packet.opcode) === -1 ||
                     handler.except && handler.except.indexOf(packet.opcode) !== -1
@@ -82,7 +96,7 @@ class PwServiceProxy
 
     /**
      * @param {Object} options
-     * @return {PwServiceProxy}
+     * @returns {PwServiceProxy}
      */
     start(options) {
         let _this = this;
@@ -101,10 +115,10 @@ class PwServiceProxy
             let serverSocket = net.createConnection(options.connect, function () {
                 clientSocket
                     .pipe(packetParserStreamFactory(_this._options))
-                    .pipe(_this._createHandlersStream(_this._clientHandlers, clientSocket, serverSocket))
+                    .pipe(_this._createHandlersStream(_this._handlers.client, clientSocket, serverSocket))
                     .pipe(serverSocket)
                     .pipe(packetParserStreamFactory(_this._options))
-                    .pipe(_this._createHandlersStream(_this._serverHandlers, serverSocket, clientSocket))
+                    .pipe(_this._createHandlersStream(_this._handlers.server, serverSocket, clientSocket))
                     .pipe(clientSocket);
             });
 
@@ -138,19 +152,19 @@ class PwServiceProxy
 
     /**
      * @param {Array} handlers
-     * @return {PwServiceProxy}
+     * @returns {PwServiceProxy}
      */
     setClientHandlers(handlers) {
-        this._clientHandlers = this._prepareHandlersList(handlers);
+        this._handlers.client._list = this._prepareHandlersList(handlers);
         return this;
     }
 
     /**
      * @param {Array} handlers
-     * @return {PwServiceProxy}
+     * @returns {PwServiceProxy}
      */
     setServerHandlers(handlers) {
-        this._serverHandlers = this._prepareHandlersList(handlers);
+        this._handlers.server._list = this._prepareHandlersList(handlers);
         return this;
     }
 }

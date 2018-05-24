@@ -1,11 +1,11 @@
 'use strict';
 
 const PwBuffer = require('pw-buffer');
-const transformStream = require('./transform-stream-factory');
+const transformStreamFactory = require('./transform-stream-factory');
 
 /**
  * @param {Object} options
- * @return {Stream}
+ * @returns {Stream}
  */
 module.exports = function (options) {
     options = Object.assign({}, options || {});
@@ -15,7 +15,7 @@ module.exports = function (options) {
     let packet;
     let oldPointer;
 
-    return transformStream(function (chunk, enc, done) {
+    return transformStreamFactory(function (chunk, enc, done) {
         if (buffer.getFreeSpace() < options.bufferFreeSpaceGc) {
             buffer.gc();
         }
