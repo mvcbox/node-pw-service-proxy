@@ -1,6 +1,6 @@
 {
   "name": "pw-service-proxy",
-  "version": "2.4.0",
+  "version": "3.0.0",
   "description": "TCP proxy for game services",
   "main": "index.js",
   "scripts": {
@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/mvcbox/node-pw-service-proxy#readme",
   "dependencies": {
-    "async": "^2.6.0",
+    "async": "^2.6.1",
     "pw-buffer": "^0.2.0",
     "through2": "^2.0.3"
   }
