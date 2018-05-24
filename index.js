@@ -1,9 +1,8 @@
 'use strict';
 
 const net = require('net');
-const async = require('async');
-const transformStreamFactory = require('./transform-stream-factory');
 const packetParserStreamFactory = require('./packet-parser-stream-factory');
+const handlersStreamFactory = require('./handlers-stream-factory');
 
 /**
  * @property {Object} _options
@@ -64,37 +63,6 @@ class PwServiceProxy {
     }
 
     /**
-     * @param {Object} handlers
-     * @param {Stream} input
-     * @param {Stream} output
-     * @returns {Stream}
-     * @private
-     */
-    _createHandlersStream(handlers, input, output) {
-        return transformStreamFactory(function (packet, enc, streamDone) {
-            let _thisStream = this;
-
-            async.eachSeries(handlers._list, function (handler, next) {
-                if (
-                    handler.only && handler.only.indexOf(packet.opcode) === -1 ||
-                    handler.except && handler.except.indexOf(packet.opcode) !== -1
-                ) {
-                    return next();
-                }
-
-                handler.handler(packet, input, output, next);
-            }, function (err) {
-                if (!err) {
-                    packet.payload.writeCUInt(packet.payload.length, true).writeCUInt(packet.opcode, true);
-                    _thisStream.push(packet.payload.buffer);
-                }
-
-                streamDone();
-            });
-        });
-    }
-
-    /**
      * @param {Object} options
      * @returns {PwServiceProxy}
      */
@@ -115,10 +83,10 @@ class PwServiceProxy {
             let serverSocket = net.createConnection(options.connect, function () {
                 clientSocket
                     .pipe(packetParserStreamFactory(_this._options))
-                    .pipe(_this._createHandlersStream(_this._handlers.client, clientSocket, serverSocket))
+                    .pipe(handlersStreamFactory(_this._handlers.client, clientSocket, serverSocket))
                     .pipe(serverSocket)
                     .pipe(packetParserStreamFactory(_this._options))
-                    .pipe(_this._createHandlersStream(_this._handlers.server, serverSocket, clientSocket))
+                    .pipe(handlersStreamFactory(_this._handlers.server, serverSocket, clientSocket))
                     .pipe(clientSocket);
             });
 
