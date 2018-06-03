@@ -1,11 +1,14 @@
 'use strict';
 
-const through2 = require('through2');
+const Transform = require('stream').Transform;
 
 /**
  * @param {Function} handler
  * @returns {Stream}
  */
 module.exports = function (handler) {
-    return through2.obj(handler);
+    return new Transform({
+        objectMode: true,
+        transform: handler
+    });
 };
