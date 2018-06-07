@@ -10,9 +10,7 @@ const transformStreamFactory = require('./transform-stream-factory');
  * @returns {Stream}
  */
 module.exports = function (handlers, input, output) {
-    return transformStreamFactory(function (packet, enc, streamNext) {
-        let _thisStream = this;
-
+    return transformStreamFactory(function (packet, enc, done) {
         async.eachSeries(handlers._list, function (handler, next) {
             if (
                 handler.only && handler.only.indexOf(packet.opcode) === -1 ||
@@ -23,12 +21,13 @@ module.exports = function (handlers, input, output) {
 
             handler.handler(packet, input, output, next);
         }, function (err) {
-            if (!err) {
-                packet.payload.writeCUInt(packet.payload.length, true).writeCUInt(packet.opcode, true);
-                _thisStream.push(packet.payload.buffer);
+            if (err) {
+                return done();
             }
 
-            streamNext();
+            done(null, packet.payload.writeCUInt(packet.payload.length, true).writeCUInt(packet.opcode, true).buffer);
         });
+    }, {
+        writableObjectMode: true
     });
 };
