@@ -1,7 +1,6 @@
 'use strict';
 
 const net = require('net');
-const packetParserStreamFactory = require('./packet-parser-stream-factory');
 const handlersStreamFactory = require('./handlers-stream-factory');
 const consoleFactory = require('./console-factory');
 
@@ -78,11 +77,9 @@ class PwServiceProxy {
             let alreadyClosed = false;
             let serverSocket = net.createConnection(options.connect, function () {
                 clientSocket
-                    .pipe(packetParserStreamFactory(_this._options))
-                    .pipe(handlersStreamFactory(_this._handlers.client, clientSocket, serverSocket))
+                    .pipe(handlersStreamFactory(_this._handlers.client, clientSocket, serverSocket, _this._options))
                     .pipe(serverSocket)
-                    .pipe(packetParserStreamFactory(_this._options))
-                    .pipe(handlersStreamFactory(_this._handlers.server, serverSocket, clientSocket))
+                    .pipe(handlersStreamFactory(_this._handlers.server, serverSocket, clientSocket, _this._options))
                     .pipe(clientSocket);
             });
 
