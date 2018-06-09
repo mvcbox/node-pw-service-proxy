@@ -3,6 +3,7 @@
 const net = require('net');
 const packetParserStreamFactory = require('./packet-parser-stream-factory');
 const handlersStreamFactory = require('./handlers-stream-factory');
+const consoleFactory = require('./console-factory');
 
 /**
  * @property {Object} _options
@@ -21,8 +22,12 @@ class PwServiceProxy {
             bufferSize: 10485760,
             bufferFreeSpaceGc: 1048576,
             noDelay: true,
-            consoleLog: false
+            consoleLog: false,
+            consoleError: true
         }, options || {});
+
+        this._consoleLog = consoleFactory('log', this._options.consoleLog);
+        this._consoleError = consoleFactory('error', this._options.consoleError);
 
         this._handlers = {
             client: {
@@ -32,15 +37,6 @@ class PwServiceProxy {
                 _list: []
             }
         };
-    }
-
-    /**
-     * @private
-     */
-    _consoleLog() {
-        if (this._options.consoleLog) {
-            console.log.apply(console, arguments);
-        }
     }
 
     /**
@@ -95,24 +91,17 @@ class PwServiceProxy {
                     alreadyClosed = true;
                     clientSocket.end().unref();
                     serverSocket.end().unref();
-                    _this._consoleLog('---------------------------------------------------------------------------');
-                    _this._consoleLog('[' + new Date().toLocaleString() + ']: Client disconnected [' + remoteAddr + ']');
+                    _this._consoleLog(`Client disconnected [${remoteAddr}]`);
                 }
             }
 
             serverSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(_this._options.noDelay);
             clientSocket.on('close', closeConnection).on('error', closeConnection).setNoDelay(_this._options.noDelay);
-            _this._consoleLog('---------------------------------------------------------------------------');
-            _this._consoleLog('[' + new Date().toLocaleString() + ']: Client connected [' + remoteAddr + ']');
+            _this._consoleLog(`Client connected [${remoteAddr}]`);
         }).listen(options.listen, function () {
-            _this._consoleLog('---------------------------------------------------------------------------');
-            _this._consoleLog('[' + new Date().toLocaleString() + ']: Proxy start');
+            _this._consoleLog('Proxy start');
         }).on('error', function (err) {
-            console.error('---------------------------------------------------------------------------');
-            console.error('[' + new Date().toLocaleString() + ']: Proxy error');
-            console.error(JSON.stringify(options, null, 2));
-            console.error(err.stack);
-            console.error('---------------------------------------------------------------------------');
+            _this._consoleError('Proxy error', JSON.stringify(options, null, 2), err.stack);
         });
 
         return this;
