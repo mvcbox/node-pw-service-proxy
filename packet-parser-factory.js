@@ -7,44 +7,45 @@ const PwBuffer = require('pw-buffer');
  */
 module.exports = function (options) {
     options = Object.assign({}, options || {});
-    let _buffer = new PwBuffer({
+    let buffer = new PwBuffer({
         maxBufferLength: options.bufferSize
     });
+    let result;
     let packet;
     let oldPointer;
 
-    return function (buffer) {
-        if (_buffer.getFreeSpace() < options.bufferFreeSpaceGc) {
-            _buffer.gc();
+    return function (chunk) {
+        if (buffer.getFreeSpace() < options.bufferFreeSpaceGc) {
+            buffer.gc();
         }
 
-        let result = [];
-        _buffer._writeNativeBuffer(buffer, false);
+        result = [];
+        buffer._writeNativeBuffer(chunk, false);
 
         while (true) {
             packet = {};
-            oldPointer = _buffer.pointer;
+            oldPointer = buffer.pointer;
 
-            if (!_buffer.isReadableCUInt()) {
-                _buffer.pointer = oldPointer;
+            if (!buffer.isReadableCUInt()) {
+                buffer.pointer = oldPointer;
                 break;
             }
 
-            packet.opcode = _buffer.readCUInt();
+            packet.opcode = buffer.readCUInt();
 
-            if (!_buffer.isReadableCUInt()) {
-                _buffer.pointer = oldPointer;
+            if (!buffer.isReadableCUInt()) {
+                buffer.pointer = oldPointer;
                 break;
             }
 
-            packet.length = _buffer.readCUInt();
+            packet.length = buffer.readCUInt();
 
-            if (!_buffer.isReadable(packet.length)) {
-                _buffer.pointer = oldPointer;
+            if (!buffer.isReadable(packet.length)) {
+                buffer.pointer = oldPointer;
                 break;
             }
 
-            packet.payload = _buffer.readBuffer(packet.length, false, {
+            packet.payload = buffer.readBuffer(packet.length, false, {
                 maxBufferLength: packet.length + 10
             });
 
