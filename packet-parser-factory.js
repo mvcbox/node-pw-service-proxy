@@ -20,7 +20,7 @@ module.exports = function (options) {
         }
 
         result = [];
-        buffer._writeNativeBuffer(chunk, false);
+        buffer._writeNativeBuffer(chunk);
 
         while (true) {
             packet = {};
