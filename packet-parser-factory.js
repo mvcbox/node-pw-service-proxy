@@ -3,7 +3,8 @@
 const PwBuffer = require('pw-buffer');
 
 /**
- * @param options
+ * @param {Object} options
+ * @returns {function(*=): Array}
  */
 module.exports = function (options) {
     options = Object.assign({}, options || {});
