@@ -8,11 +8,11 @@ const packetParserFactory = require('./packet-parser-factory');
  * @param {Object} handlers
  * @param {Stream} input
  * @param {Stream} output
- * @param {Object} packetParserOptions
+ * @param {Object} options
  * @returns {Stream}
  */
-module.exports = function (handlers, input, output, packetParserOptions) {
-    let packetParser = packetParserFactory(packetParserOptions);
+module.exports = function (handlers, input, output, options) {
+    let packetParser = packetParserFactory(options);
 
     return transformStreamFactory(function (chunk, enc, done) {
         let _stream = this;
