@@ -14,7 +14,7 @@ module.exports = function (type, showLogs) {
         if (showLogs) {
             console[type]('---------------------------------------------------------------------------');
             console[type](`[${new Date().toLocaleString()}]: ${title}`);
-            args.map(function (item) {
+            args.forEach(function (item) {
                 console[type](item);
             });
             console[type]('---------------------------------------------------------------------------');
