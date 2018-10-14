@@ -25,24 +25,24 @@ module.exports = function (options) {
 
         while (true) {
             packet = {};
-            oldPointer = buffer.pointer;
+            oldPointer = buffer._pointer;
 
             if (!buffer.isReadableCUInt()) {
-                buffer.pointer = oldPointer;
+                buffer._pointer = oldPointer;
                 break;
             }
 
             packet.opcode = buffer.readCUInt();
 
             if (!buffer.isReadableCUInt()) {
-                buffer.pointer = oldPointer;
+                buffer._pointer = oldPointer;
                 break;
             }
 
             packet.length = buffer.readCUInt();
 
             if (!buffer.isReadable(packet.length)) {
-                buffer.pointer = oldPointer;
+                buffer._pointer = oldPointer;
                 break;
             }
 
