@@ -8,12 +8,13 @@ const PwBuffer = require('pw-buffer');
  */
 module.exports = function (options) {
     options = Object.assign({}, options || {});
+    let result;
+    let opcode;
+    let length;
+    let oldPointer;
     let buffer = new PwBuffer({
         maxBufferLength: options.bufferSize
     });
-    let result;
-    let packet;
-    let oldPointer;
 
     return function (chunk) {
         if (buffer.getFreeSpace() < options.bufferFreeSpaceGc) {
@@ -24,33 +25,32 @@ module.exports = function (options) {
         buffer._writeNativeBuffer(chunk);
 
         while (true) {
-            packet = {};
+            if (!buffer.isReadableCUInt()) {
+                break;
+            }
+
             oldPointer = buffer._pointer;
+            opcode = buffer.readCUInt();
 
             if (!buffer.isReadableCUInt()) {
                 buffer._pointer = oldPointer;
                 break;
             }
 
-            packet.opcode = buffer.readCUInt();
+            length = buffer.readCUInt();
 
-            if (!buffer.isReadableCUInt()) {
+            if (!buffer.isReadable(length)) {
                 buffer._pointer = oldPointer;
                 break;
             }
 
-            packet.length = buffer.readCUInt();
-
-            if (!buffer.isReadable(packet.length)) {
-                buffer._pointer = oldPointer;
-                break;
-            }
-
-            packet.payload = buffer.readBuffer(packet.length, false, {
-                maxBufferLength: packet.length + 10
+            result.push({
+                opcode,
+                length,
+                payload: buffer.readBuffer(length, false, {
+                    maxBufferLength: length + 10
+                })
             });
-
-            result.push(packet);
         }
 
         return result;
